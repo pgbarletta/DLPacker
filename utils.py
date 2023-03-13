@@ -36,6 +36,7 @@
 # ==============================================================================
 
 import time, os, re
+from pathlib import Path
 
 import numpy as np
 
@@ -105,7 +106,7 @@ class DLPModel():
         return 'lol'
     
     def load_model(self, weights:str, history:str = ''):
-        self.model.load_weights(weights + '.h5')
+        self.model.load_weights(weights)
         if history:
             with open(history + '.pkl', 'rb') as h:
                 self.loss_history = pickle.load(h)
@@ -228,8 +229,8 @@ class InputBoxReader():
     #     Channel  6 - charges
     #     Channels 7-26 - backbones of amino acids, each channel for one AA
     # Output tensor has four element chanels (CNOS)
-    def __init__(self, remove_sidechains:str = 'none',\
-                       from_dict:bool = True, include_water:bool = False,\
+    def __init__(self, charges_path: Path, remove_sidechains:str = 'none',
+                       from_dict:bool = True, include_water:bool = False,
                        charges_filename:str = 'charges.rtp'):
         self.grid_size = GRID_SIZE
         self.grid_spacing = BOX_SIZE * 2 / GRID_SIZE # grid step
@@ -255,7 +256,7 @@ class InputBoxReader():
         
         # read in the charges from special file
         self.charges = defaultdict(lambda: 0) # output 0 if the key is absent
-        with open(charges_filename, 'r') as f:
+        with open(charges_path, 'r') as f:
             for line in f:
                 if line[0] == '[' or line[0] == ' ':
                     if re.match('\A\[ .{1,3} \]\Z', line[:-1]):

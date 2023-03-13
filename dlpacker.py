@@ -34,10 +34,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # ==============================================================================
+from pathlib import Path
+from io import StringIO
 
 import numpy as np
-
 from Bio.PDB import PDBParser, Selection, Superimposer, PDBIO, Atom, Residue, Structure
+
 from utils import DLPModel, InputBoxReader, DataGenerator, THE20, SCH_ATOMS, BB_ATOMS, SIDE_CHAINS, BOX_SIZE
 
 class DLPacker():
@@ -47,8 +49,8 @@ class DLPacker():
     # using DLPModel's predictions.
     # You might need to change this class if you
     # want to implement some new functionality
-    def __init__(self, str_pdb:str, model:DLPModel = None,\
-                       input_reader:InputBoxReader = None):
+    def __init__(self, str_pdb:str, *, weights_path: Path, lib_path: Path, charges_path: Path,
+                 model: DLPModel = None, input_reader: InputBoxReader = None):
         # Input:
         # str_pdb      - filename of the PDB structure we will be working with
         #                this structure might or might not contain the side
@@ -67,17 +69,16 @@ class DLPacker():
         self.ref_pdb = './reference.pdb' # reference atoms to align residues to
         self._read_structures()
         self.reconstructed = None
-        
-        self.lib_name = './library.npz' # library of rotamers
+        self.lib_name = str(lib_path) # library of rotamers
         self._load_library()
         
         self.model = model
         if not self.model:
             self.model = DLPModel(width = 128, nres = 6)
-            self.model.load_model(weights = 'DLPacker_weights')
+            self.model.load_model(weights = str(weights_path))
 
         self.input_reader = input_reader
-        if not self.input_reader: self.input_reader = InputBoxReader()
+        if not self.input_reader: self.input_reader = InputBoxReader(charges_path)
     
     def _load_library(self):
         # Loads library of rotamers.
@@ -89,9 +90,12 @@ class DLPacker():
             self.library['grids'][k] = self.library['grids'][k].astype(np.float32)
     
     def _read_structures(self):
+        refe_text = StringIO("""ATOM      1  N   XXX X  94      -3.274  -1.500  -1.169  1.00 27.30      A    N
+ATOM      2  CA  XXX X  94      -2.468  -1.500   0.000  1.00 27.66      A    C
+ATOM      3  C   XXX X  94      -3.379  -1.500   1.222  1.00 28.10      A    C """)
         # Reads in main PDB structure and reference structure.
         self.structure = self.parser.get_structure('structure', self.str_pdb)
-        self.reference = self.parser.get_structure('reference', self.ref_pdb)
+        self.reference = self.parser.get_structure('reference', refe_text)
         
         self._remove_hydrogens(self.structure) # we never use hydrogens
         self._convert_mse(self.structure)      # convers MSE to MET
@@ -487,7 +491,7 @@ class DLPacker():
         if output_filename:
             print('\nWriting output file...')
             self.io.set_structure(self.reconstructed)
-            self.io.save(output_filename)
+            self.io.save(str(output_filename))
         print('Done!')
 
     def reconstruct_region(self, targets:list, order:str = 'natoms',\
@@ -514,7 +518,7 @@ class DLPacker():
             if self._get_residue_tuple(residue) in targets:
                 if residue.get_resname() in THE20 and residue.get_resname() != 'GLY':
                     name = self._get_residue_tuple(residue)
-                    print("Working on residue:", i, name, end = '\r')
+                    print("Working on residue:", i, name, end = '\n')
                     self.reconstruct_residue(residue, refine_only)
         
         self._align_structures(self.structure, self.reconstructed)
@@ -523,7 +527,7 @@ class DLPacker():
             print()
             print('Writing output file...')
             self.io.set_structure(self.reconstructed)
-            self.io.save(output_filename)
+            self.io.save(str(output_filename))
         print('Done!')
         
     def save_structure(self, output_filename:str):
