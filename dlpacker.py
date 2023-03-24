@@ -40,7 +40,7 @@ from io import StringIO
 import numpy as np
 from Bio.PDB import PDBParser, Selection, Superimposer, PDBIO, Atom, Residue, Structure
 
-from utils import DLPModel, InputBoxReader, DataGenerator, THE20, SCH_ATOMS, BB_ATOMS, SIDE_CHAINS, BOX_SIZE
+from DLPacker.utils import DLPModel, InputBoxReader, DataGenerator, THE20, SCH_ATOMS, BB_ATOMS, SIDE_CHAINS, BOX_SIZE
 
 class DLPacker():
     # This is the meat of our code.
