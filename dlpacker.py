@@ -419,7 +419,8 @@ ATOM      3  C   XXX X  94      -3.379  -1.500   1.222  1.00 28.10      A    C "
         # this function takes as input residue tuple [like (10, 'B', 'PHE')]
         # and mutates it and then runs reconstruction to build new sidechain
         residue = self.mutate_sequence(target, new_label)
-        if residue: self.reconstruct_residue(residue, False)
+        if residue and new_label != "GLY":
+            self.reconstruct_residue(residue, False)
     
     def reconstruct_residue(self, residue:Residue, refine_only:bool = False):
         # Reconstructs side chain for one residue
