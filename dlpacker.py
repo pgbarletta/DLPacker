@@ -520,11 +520,16 @@ ATOM      3  C   XXX X  94      -3.379  -1.500   1.222  1.00 28.10      A    C "
         sorted_residues = self._get_sorted_residues(self.reconstructed, targets, method = order)
         for i, residue in enumerate(sorted_residues):
             if self._get_residue_tuple(residue) in targets:
-                if residue.get_resname() in THE20 and residue.get_resname() != 'GLY':
-                    name = self._get_residue_tuple(residue)
-                    print("Working on residue:", i, name, end = '\n')
-                    self.reconstruct_residue(residue, refine_only)
-        
+                if residue.get_resname() in THE20:
+                    # IDK why I have to remove the sidechain again. For some reason, _get_sorted_residues() gives
+                    # back the glycine with its full sidechain again.
+                    if residue.get_resname() == 'GLY':
+                        self._remove_sidechain(residue)
+                    #
+                    else:
+                        name = self._get_residue_tuple(residue)
+                        print("Working on residue:", i, name, end = '\n')
+                        self.reconstruct_residue(residue, refine_only)
         self._align_structures(self.structure, self.reconstructed)
         
         if output_filename:
